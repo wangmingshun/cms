@@ -22,5 +22,5 @@ public interface IBaseDao<T> {
 	/**
 	 * 根据id加载对象
 	 */
-	public T get(int id);
+	public T load(int id);
 }
