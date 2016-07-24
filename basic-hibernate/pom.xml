@@ -11,5 +11,8 @@
   <groupId>com.wms.basic</groupId>
   <artifactId>basic-hibernate</artifactId>
   
+  <dependencies>
+  
+  </dependencies>
   
 </project>
