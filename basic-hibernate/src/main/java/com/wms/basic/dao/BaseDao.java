@@ -1,6 +1,7 @@
 package com.wms.basic.dao;
 
 import java.lang.reflect.ParameterizedType;
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -9,8 +10,10 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import org.hibernate.Query;
+import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.transform.Transformers;
 
 import com.wms.basic.model.Pager;
 import com.wms.basic.model.SystemContext;
@@ -68,9 +71,9 @@ public class BaseDao<T> implements IBaseDao<T> {
 		return (T) getSession().load(this.getClz(), id);
 	}
 
-	private String initSortHql(String hql) {
+	private String initSort(String hql) {
 		String sort = SystemContext.getSort();
-		String order = SystemContext.getSort();
+		String order = SystemContext.getOrder();
 		if(sort != null && !"".equals(sort)) {
 			hql += " order by " + sort;
 			if("desc".equals(order)) {
@@ -84,14 +87,14 @@ public class BaseDao<T> implements IBaseDao<T> {
 	
 	@SuppressWarnings("rawtypes")
 	private void setAliasParameter(Query query, Map<String, Object> alias) {
-		if(alias != null || alias.size() > 0) {
+		if(alias != null && alias.size() > 0) {
 			Iterator<Map.Entry<String, Object>> iterator = alias.entrySet().iterator();
 			while(iterator.hasNext()) {
 				Map.Entry<String, Object> entry = iterator.next();
 				String key = entry.getKey();
 				Object value = entry.getValue();
 				if(value instanceof Collection) {
-					query.setParameter(key, (Collection) value);
+					query.setParameterList(key, (Collection) value);
 				} else {
 					query.setParameter(key, value);
 				}
@@ -109,15 +112,20 @@ public class BaseDao<T> implements IBaseDao<T> {
 	}
 	
 	private String getCountSql(String hql, boolean isHql) {
-		String rep = hql.replaceFirst("^(select|SELECT)\\s+(.*)\\s+(from|FROM).*", "$2");
-		hql = hql.replaceFirst(rep, "count(*)");
-		if(isHql) {
-			hql = hql.replaceAll("fetch", "");
-		}
-		return hql;
+//		String rep = hql.replaceFirst("^(select|SELECT)\\s+(.*)\\s+(from|FROM).*", "$2");
+//		hql = hql.replaceFirst(rep, "count(*)");
+//		if(isHql) {
+//			hql = hql.replaceAll("fetch", "");
+//		}
+//		return hql;
+		String e = hql.substring(hql.indexOf("from"));
+		String c = "select count(*) " + e;
+		if(isHql)
+			c.replaceAll("fetch", "");
+		return c;
 	}
 	
-	private void setPager(Query query, Pager<T> pager) {
+	private void setPager(Query query, Pager pager) {
 		Integer pageSize = SystemContext.getPageSize();
 		Integer pageOffset = SystemContext.getPageOffset();
 		if(pageSize == null || pageSize < 0) {
@@ -134,7 +142,7 @@ public class BaseDao<T> implements IBaseDao<T> {
 	
 	// 不分页
 	public List<T> list(String hql, Object[] args, Map<String, Object> alias) {
-		hql = this.initSortHql(hql);
+		hql = this.initSort(hql);
 		Query query = getSession().createQuery(hql);
 		this.setAliasParameter(query, alias);
 		this.setParameter(query, args);
@@ -159,7 +167,7 @@ public class BaseDao<T> implements IBaseDao<T> {
 	
 	// 分页
 	public Pager<T> find(String hql, Object[] args, Map<String, Object> alias) {
-		hql = this.initSortHql(hql);
+		hql = this.initSort(hql);
 		String cq = getCountSql(hql, true);
 		Query query = getSession().createQuery(hql);
 		Query cQuery = getSession().createQuery(cq);
@@ -188,6 +196,115 @@ public class BaseDao<T> implements IBaseDao<T> {
 	
 	public Pager<T> findByAlias(String hql, Map<String, Object> alias) {
 		return this.find(hql, null, alias);
+	}
+	
+	//查询单个对象
+	public Object queryObject(String hql, Object[] args, Map<String, Object> alias) {
+		Query query = getSession().createQuery(hql);
+		setParameter(query, args);
+		setAliasParameter(query, alias);
+		return query.uniqueResult();
+	}
+	
+	public Object queryObject(String hql, Object[] args) {
+		return queryObject(hql, args, null);
+	}
+	
+	public Object queryObject(String hql, Object arg) {
+		return queryObject(hql, new Object[]{arg});
+	}
+	
+	public Object queryObjectByAlias(String hql, Map<String, Object> alias) {
+		return queryObject(hql, null, alias);
+	}
+	
+	public Object queryObject(String hql) {
+		return queryObject(hql, null);
+	}
+	
+	//更新对象
+	public void updateByHql(String hql, Object[] args) {
+		Query query = getSession().createQuery(hql);
+		setParameter(query, args);
+		query.executeUpdate();
+	}
+	
+	public void updateByHql(String hql, Object arg) {
+		this.updateByHql(hql, new Object[]{arg});
+	}
+	
+	public void updateByHql(String hql) {
+		updateByHql(hql, null);
+	}
+	
+	//根据sql来查询
+	public <N extends Object>List<N> listBySql(String sql, Object[] args, Map<String, Object> alias, Class<?> clz, boolean isEntity) {
+		sql = initSort(sql);
+		SQLQuery sqlQuery = getSession().createSQLQuery(sql);
+		setParameter(sqlQuery, args);
+		setAliasParameter(sqlQuery, alias);
+		if(isEntity) {
+			//查询返回的实体
+			sqlQuery.addEntity(clz);
+		} else {
+			//能够将查询结果依别名注入到clz实体中
+			sqlQuery.setResultTransformer(Transformers.aliasToBean(clz));
+		}
+		return sqlQuery.list();
+	}
+	
+	public <N extends Object>List<N> listBySql(String sql, Object[] args, Class<?> clz, boolean isEntity) {
+		return this.listBySql(sql, args, null, clz, isEntity);
+	}
+	
+	public <N extends Object>List<N> listBySql(String sql, Object arg, Class<?> clz, boolean isEntity) {
+		return this.listBySql(sql, new Object[]{arg}, null, clz, isEntity);
+	}
+	
+	public <N extends Object>List<N> listBySql(String sql, Class<?> clz, boolean isEntity) {
+		return this.listBySql(sql, null, null, clz, isEntity);
+	}
+	
+	public <N extends Object>List<N> listByAliasSql(String sql, Map<String, Object> alias, Class<?> clz, boolean isEntity) {
+		return this.listBySql(sql, null, alias, clz, isEntity);
+	}
+	
+	//根据sql查询分页
+	public <N extends Object>Pager<N> findBySql(String sql, Object[] args, Map<String, Object> alias, Class<?> clz, boolean isEntity) {
+		sql = initSort(sql);
+		String cq = getCountSql(sql, false);
+		SQLQuery sqlQuery = getSession().createSQLQuery(sql);
+		SQLQuery cQuery = getSession().createSQLQuery(cq);
+		setAliasParameter(sqlQuery, alias);
+		setParameter(sqlQuery, args);
+		setAliasParameter(cQuery, alias);
+		setParameter(cQuery, args);
+		Pager<N> pager = new Pager<N>();
+		setPager(sqlQuery, pager);
+		if(isEntity) {
+			sqlQuery.addEntity(clz);
+		} else {
+			sqlQuery.setResultTransformer(Transformers.aliasToBean(clz));
+		}
+		pager.setDatas(sqlQuery.list());
+		pager.setTotal(((BigInteger) cQuery.uniqueResult()).longValue());
+		return pager;
+	}
+	
+	public <N extends Object>Pager<N> findBySql(String sql, Object[] args, Class<?> clz, boolean isEntity) {
+		return this.findBySql(sql, args, null, clz, isEntity);
+	}
+	
+	public <N extends Object>Pager<N> findBySql(String sql, Object arg, Class<?> clz, boolean isEntity) {
+		return this.findBySql(sql, new Object[]{arg}, null, clz, isEntity);
+	}
+	
+	public <N extends Object>Pager<N> findBySql(String sql, Class<?> clz, boolean isEntity) {
+		return this.findBySql(sql, null, null, clz, isEntity);
+	}
+	
+	public <N extends Object>Pager<N> findByAliasSql(String sql, Map<String, Object> alias, Class<?> clz, boolean isEntity) {
+		return this.findBySql(sql, null, alias, clz, isEntity);
 	}
 	
 	public static void main(String[] args) {
