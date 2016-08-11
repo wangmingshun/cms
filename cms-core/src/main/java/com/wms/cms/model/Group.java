@@ -26,6 +26,17 @@ public class Group {
 	 */
 	private String description;
 	
+	public Group() {
+		super();
+	}
+	
+	public Group(int id, String name, String description) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.description = description;
+	}
+
 	@Id
 	@GeneratedValue
 	public int getId() {

@@ -45,6 +45,21 @@ public class User {
 	 */
 	private Date createDate;
 	
+	public User(int id, String username, String nickname, String password, String email, String phone, int status) {
+		super();
+		this.id = id;
+		this.username = username;
+		this.nickname = nickname;
+		this.password = password;
+		this.email = email;
+		this.phone = phone;
+		this.status = status;
+	}
+	
+	public User() {
+		super();
+	}
+
 	@Id
 	@GeneratedValue
 	public int getId() {

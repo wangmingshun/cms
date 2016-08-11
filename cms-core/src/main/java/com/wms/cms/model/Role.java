@@ -29,6 +29,17 @@ public class Role {
 	 */
 	private RoleType roleType;
 	
+	public Role(int id, String name, RoleType roleType) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.roleType = roleType;
+	}
+	
+	public Role() {
+		super();
+	}
+	
 	@Id
 	@GeneratedValue
 	public int getId() {
