@@ -14,73 +14,74 @@ import com.wms.cms.model.UserGroup;
 import com.wms.cms.model.UserRole;
 
 @Repository("userDao")
+@SuppressWarnings("unchecked")
 public class UserDao extends BaseDao<User> implements IUserDao {
 
 	@Override
-	public List<Role> listUserRoles(int userId) {
+	public List<Role> listRoleByUserId(int userId) {
 		String hql = "select ur.role from UserRole ur where ur.user.id=?";
 		return this.getSession().createQuery(hql).setParameter(0, userId).list();
 	}
 
 	@Override
-	public List<Integer> listUserRoleIds(int userId) {
+	public List<Integer> listRoleIdByUserId(int userId) {
 		String hql = "select ur.id from UserRole ur where ur.user.id=?";
 		return this.getSession().createQuery(hql).setParameter(0, userId).list();
 	}
 
 	@Override
-	public List<Group> listUserGroups(int userId) {
+	public List<Group> listGroupByUserId(int userId) {
 		String hql = "select ug.group from UserGroup ug where ug.user.id=?";
 		return this.getSession().createQuery(hql).setParameter(0, userId).list();
 	}
 
 	@Override
-	public List<Integer> listUserGroupIds(int userId) {
+	public List<Integer> listGroupIdByUserId(int userId) {
 		String hql = "select ug.id from UserGroup ug where ug.user.id=?";
 		return this.getSession().createQuery(hql).setParameter(0, userId).list();
 	}
 
 	@Override
-	public UserRole loadUserRole(int userId, int roleId) {
+	public UserRole loadUserRoleByUserIdAndRoleId(int userId, int roleId) {
 		String hql = "select ur from UserRole ur where ur.user.id=? and ur.role.id=?";
 		return (UserRole) this.getSession().createQuery(hql)
 					.setParameter(0, userId).setParameter(1, roleId).uniqueResult();
 	}
 
 	@Override
-	public UserGroup loadUserGroup(int userId, int groupId) {
+	public UserGroup loadUserGroupByUserIdAndGroupId(int userId, int groupId) {
 		String hql = "select ug from UserGroup ug where ug.user.id=? and ug.group.id=?";
 		return (UserGroup) this.getSession().createQuery(hql)
 					.setParameter(0, userId).setParameter(1, groupId).uniqueResult();
 	}
 
 	@Override
-	public User loadByUsername(String username) {
+	public User loadUserByUsername(String username) {
 		String hql = "from User where username=?";
 		return (User) this.queryObject(hql, username);
 	}
 
 	@Override
-	public List<User> listRoleUsers(int roleId) {
+	public List<User> listUserByRoleId(int roleId) {
 		String hql = "select ur.user from UserRole ur where ur.role.id=?";
 		return this.list(hql, roleId);
 	}
 
 	@Override
-	public List<User> listRoleTypeUsers(RoleType roleType) {
+	public List<User> listUserByRoleType(RoleType roleType) {
 		String hql = "select ur.user from UserRole ur where ur.role.roleType=?";
 		return this.list(hql, roleType);
 	}
 
 	@Override
-	public List<User> listGroupUsers(int groupId) {
+	public List<User> listUserByGroupId(int groupId) {
 		String hql = "select ug.user from UserGroup ug where ug.group.id=?";
 		return this.list(hql, groupId);
 	}
 
 	@Override
 	public void addUserRole(User user, Role role) {
-		UserRole ur = this.loadUserRole(user.getId(), role.getId());
+		UserRole ur = this.loadUserRoleByUserIdAndRoleId(user.getId(), role.getId());
 		if(ur != null) {
 			return;
 		}
@@ -92,7 +93,7 @@ public class UserDao extends BaseDao<User> implements IUserDao {
 
 	@Override
 	public void addUserGroup(User user, Group group) {
-		UserGroup ug = this.loadUserGroup(user.getId(), group.getId());
+		UserGroup ug = this.loadUserGroupByUserIdAndGroupId(user.getId(), group.getId());
 		if(ug != null) {
 			return;
 		}
@@ -104,25 +105,25 @@ public class UserDao extends BaseDao<User> implements IUserDao {
 	}
 
 	@Override
-	public void deleteUserRole(int userId) {
+	public void deleteUserRoleByUserId(int userId) {
 		String hql = "delete UserRole ur where ur.user.id=?";
 		this.updateByHql(hql, userId);
 	}
 
 	@Override
-	public void deleteUserGroup(int userId) {
+	public void deleteUserGroupByUserId(int userId) {
 		String hql = "delete UserGroup ug where ug.user.id=?";
 		this.updateByHql(hql, userId);
 	}
 
 	@Override
-	public void deleteUserRole(int userId, int roleId) {
+	public void deleteUserRoleByUserIdAndRoleId(int userId, int roleId) {
 		String hql = "delete UserRole ur where ur.user.id=? and ur.role.id=?";
 		this.updateByHql(hql, new Object[]{userId, roleId});
 	}
 
 	@Override
-	public void deleteUserGroup(int userId, int groupId) {
+	public void deleteUserGroupByUserIdAndGroupId(int userId, int groupId) {
 		String hql = "delete UserGroup ug where ug.user.id=? and ug.group.id=?";
 		this.updateByHql(hql, new Object[]{userId, groupId});
 	}
