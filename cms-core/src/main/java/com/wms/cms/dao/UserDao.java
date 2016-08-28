@@ -43,14 +43,14 @@ public class UserDao extends BaseDao<User> implements IUserDao {
 
 	@Override
 	public UserRole loadUserRoleByUserIdAndRoleId(int userId, int roleId) {
-		String hql = "select ur from UserRole ur where ur.user.id=? and ur.role.id=?";
+		String hql = "select ur from UserRole ur left join fetch ur.user u left join fetch ur.role r where u.id=? and r.id=?";
 		return (UserRole) this.getSession().createQuery(hql)
 					.setParameter(0, userId).setParameter(1, roleId).uniqueResult();
 	}
 
 	@Override
 	public UserGroup loadUserGroupByUserIdAndGroupId(int userId, int groupId) {
-		String hql = "select ug from UserGroup ug where ug.user.id=? and ug.group.id=?";
+		String hql = "select ug from UserGroup ug left join fetch ug.user u left join fetch ug.group g where u.id=? and g.id=?";
 		return (UserGroup) this.getSession().createQuery(hql)
 					.setParameter(0, userId).setParameter(1, groupId).uniqueResult();
 	}
